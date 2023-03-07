@@ -1,0 +1,142 @@
+import '@webcomponents/scoped-custom-element-registry';
+
+import { LitElement, css, html } from 'lit';
+import { property, state } from 'lit/decorators.js';
+import { AppAgentWebsocket, AppAgentClient, ActionHash } from '@holochain/client';
+import { AsyncStatus, StoreSubscriber } from '@holochain-open-dev/stores';
+import { sharedStyles, DisplayError } from '@holochain-open-dev/elements';
+import { provide } from '@lit-labs/context';
+import { localized, msg } from '@lit/localize';
+import {
+  AgentAvatar,
+  Profile,
+  ProfilePrompt,
+  ProfileListItemSkeleton,
+  ProfilesClient,
+  ProfilesStore,
+  profilesStoreContext
+} from '@holochain-open-dev/profiles';
+import { ScopedElementsMixin } from '@open-wc/scoped-elements';
+import {
+  CircularProgress,
+  MdStandardIconButton,
+  TopAppBar,
+} from '@scoped-elements/material-web';
+
+type View = { view: 'main' };
+
+@localized()
+export class HolochainApp extends ScopedElementsMixin(LitElement) {
+  @state() _loading = true;
+
+  @state() _view = { view: 'main' };
+
+  @provide({ context: profilesStoreContext })
+  @property()
+  _profilesStore!: ProfilesStore;
+
+  _client!: AppAgentClient;
+
+  _myProfile!: StoreSubscriber<AsyncStatus<Profile | undefined>>;
+
+  async firstUpdated() {
+    this._client = await AppAgentWebsocket.connect('', '{{app_name}}');
+
+    await this.initStores(this._client);
+
+    this._loading = false;
+  }
+
+  async initStores(appAgentClient: AppAgentClient) {
+    // Don't change this  
+  }
+
+  renderMyProfile() {
+    switch (this._myProfile.value.status) {
+      case 'pending': 
+        return html`<profile-list-item-skeleton></profile-list-item-skeleton>`;
+      case 'complete':
+        const profile = this._myProfile.value.value;
+        if (!profile) return html``;
+        
+        return html`<div
+              class="row"
+              style="align-items: center;"
+              slot="actionItems"
+            >
+              <agent-avatar
+                .agentPubKey=${this._client.myPubKey}
+              ></agent-avatar>
+              <span style="margin: 0 16px;">${profile?.nickname}</span>
+            </div>`;
+      case 'error':
+        return html`<display-error 
+          .headline=${msg("Error fetching the profile")}
+          .error=${this._myProfile.value.error.data.data} 
+          tooltip
+          ></display-error>`;
+    }
+  }
+
+  // TODO: add here the content of your application
+  renderContent() {
+    return html``;
+  }
+  
+  renderBackButton() {
+    if (this._view.view === 'main') return html``;
+
+    return html`
+      <md-standard-icon-button
+        icon="arrow_back"
+        slot="navigationIcon"
+        @click=${() => { this._view = { view: 'main' } } }
+      ></md-standard-icon-button>
+    `;
+  }
+
+  render() {
+    if (this._loading)
+      return html`<div
+        class="row"
+        style="flex: 1; height: 100%; align-items: center; justify-content: center;"
+      >
+        <mwc-circular-progress indeterminate></mwc-circular-progress>
+      </div>`;
+
+    return html`
+      <mwc-top-app-bar style="flex: 1; display: flex;">
+        ${this.renderBackButton()}
+        <div slot="title">${msg("{{title_case app_name}}")}</div>
+        <div class="fill row" style="width: 100vw; height: 100%;">
+          <profile-prompt style="flex: 1;">
+            ${this.renderContent()}
+          </profile-prompt>
+        </div>
+        ${this.renderMyProfile()}
+      </mwc-top-app-bar>
+    `;
+  }
+
+  static get scopedElements() {
+    return {
+      'agent-avatar': AgentAvatar,
+      'profile-prompt': ProfilePrompt,
+      'md-standard-icon-button': MdStandardIconButton,
+      'mwc-top-app-bar': TopAppBar,
+      'mwc-circular-progress': CircularProgress,
+      'profile-list-item-skeleton': ProfileListItemSkeleton,
+      'display-error': DisplayError
+    };
+  }
+
+  static styles = [
+    css`
+      :host {
+        display: flex;
+        flex: 1;
+      }
+    `,
+    sharedStyles,
+  ];
+}

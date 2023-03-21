@@ -1,9 +1,10 @@
+import path from "path";
 import { defineConfig } from "vite";
 import checker from "vite-plugin-checker";
-import path from "path";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
 const components = [
+  "dialog",
   "dropdown",
   "menu",
   "menu-item",
@@ -53,4 +54,3 @@ export default defineConfig({
     }),
   ],
 });
-

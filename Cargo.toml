@@ -9,4 +9,25 @@ members = ["dnas/*/zomes/coordinator/*", "dnas/*/zomes/integrity/*"]
 resolver = "2"
 
 [workspace.dependencies]
+hdi = "=0.2.1"
+hdk = "=0.1.1"
 holochain = "0.1.3"
+serde = "1"
+
+[workspace.dependencies.file_storage]
+path = "dnas/radiance/zomes/coordinator/file_storage"
+
+[workspace.dependencies.file_storage_integrity]
+path = "dnas/radiance/zomes/integrity/file_storage"
+
+[workspace.dependencies.profiles]
+path = "dnas/radiance/zomes/coordinator/profiles"
+
+[workspace.dependencies.profiles_integrity]
+path = "dnas/radiance/zomes/integrity/profiles"
+
+[workspace.dependencies.radiance]
+path = "dnas/radiance/zomes/coordinator/radiance"
+
+[workspace.dependencies.radiance_integrity]
+path = "dnas/radiance/zomes/integrity/radiance"

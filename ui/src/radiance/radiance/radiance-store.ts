@@ -4,8 +4,21 @@ import { ActionHash } from "@holochain/client";
 
 import { RadianceClient } from "./radiance-client.js";
 
+export interface RadianceConfig {
+  deedDurabilityDays: number;
+}
+
+export function defaultConfig(): RadianceConfig {
+  return {
+    deedDurabilityDays: 7,
+  };
+}
+
 export class RadianceStore {
-  constructor(public client: RadianceClient) {}
+  constructor(
+    public client: RadianceClient,
+    public config: RadianceConfig = defaultConfig()
+  ) {}
 
   /** Deed */
 

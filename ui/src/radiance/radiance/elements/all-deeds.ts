@@ -15,10 +15,12 @@ import "@shoelace-style/shoelace/dist/components/icon-button/icon-button.js";
 import "./deed-summary.js";
 import "./create-deed.js";
 import "./deed-detail.js";
-import { RadianceStore } from "../radiance-store.js";
+import { RadianceConfig, RadianceStore } from "../radiance-store.js";
 import { radianceStoreContext } from "../context.js";
 import { Deed } from "../types.js";
 import { EntryRecord } from "@holochain-open-dev/utils";
+
+const MAX_GLOW_SIZE = 100;
 
 /**
  * @element all-deeds
@@ -42,6 +44,37 @@ export class AllDeeds extends LitElement {
 
   @state()
   _selectedDeed: ActionHash | undefined = undefined;
+
+  // First returns 0, then 1, 2, 3, (4 means not visible)
+  getDeedGlowStage(deedTimestamp: number, now: number): number {
+    const millisPassedSinceDeed = now - deedTimestamp;
+    const deedExpiryMillis =
+      deedTimestamp +
+      this.radianceStore.config.deedDurabilityDays * 24 * 60 * 60 * 1000;
+
+    const expiryPercentage =
+      millisPassedSinceDeed / (deedExpiryMillis - deedTimestamp);
+
+    return Math.floor(3 * expiryPercentage);
+  }
+
+  computeBoxShadow(deedTimestamp: number): string {
+    const stage = this.getDeedGlowStage(deedTimestamp, Date.now());
+
+    switch (stage) {
+      case 0:
+        return `box-shadow: 0 0 0px 30px rgba(255, 230, 0, 0.4),
+    0 0 000px 65px rgba(255, 230, 0, 0.4),
+    0 0 00px 100px rgba(255, 230, 0, 0.4);`;
+      case 1:
+        return `box-shadow: 0 0 0px 30px rgba(255, 230, 0, 0.4),
+    0 0 000px 65px rgba(255, 230, 0, 0.4);`;
+      case 2:
+        return `box-shadow: 0 0 0px 30px rgba(255, 230, 0, 0.4);`;
+      default:
+        return `display: none;`;
+    }
+  }
 
   renderList(deeds: Array<EntryRecord<Deed>>) {
     return html`
@@ -88,7 +121,7 @@ export class AllDeeds extends LitElement {
       >
         <img
           alt=""
-          src="../../../../assets/image.jpeg"
+          src="../../../../assets/garage.png"
           style="position: absolute; top: 0; left: 0;"
         />
 
@@ -100,8 +133,10 @@ export class AllDeeds extends LitElement {
                 this._selectedDeed = deed.actionHash;
               }}
               @keydown=${() => {}}
-              style="position: absolute; height: 20px; width: 20px; z-index: 10; border-radius: 50%; border: 1px solid; background: yellow; top: ${deed
-                .entry.y}px; left: ${deed.entry.x}px "
+              style="position: absolute; height: 20px; width: 20px; z-index: 10; border-radius: 50%; ${this.computeBoxShadow(
+                deed.action.timestamp
+              )}
+ background: yellow; top: ${deed.entry.y}px; left: ${deed.entry.x}px "
             ></span>`
         )}
       </div>
